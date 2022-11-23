@@ -1,0 +1,16 @@
+{
+  "name": "iLike",
+  "version": "0.0.2",
+  "description": "",
+  "main": "iLike.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "BigPugLabs",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.0.3"
+  }
+}
