@@ -1,31 +1,75 @@
+const {Listr} = require("listr2")
 require("dotenv").config()
 
-const getPlaylist = async (token="") => {
-    // playlist id PLBf-QcbaigsJysJ-KFZvLGJvvW-3sfk1S
-    const plid = "PLBf-QcbaigsJysJ-KFZvLGJvvW-3sfk1S"
+const getPlaylist = async (plid, token="") => {
+    // playlist ids
+    // PLBf-QcbaigsJysJ-KFZvLGJvvW-3sfk1S
+    // PLBf-QcbaigsKwq3k2YEBQS17xUwfOA3O3
+    // PLBf-QcbaigsJmwKnDgm990KBo-dI5BVA2
 
     try {
-        let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${plid}&key=${process.env.API_KEY}&maxResults=25${token && "&pageToken=" + token}`, {"Accept": "application/json"})
-        if (!res.ok) console.log("RES NOT OKAY\n", res)
+        let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${plid}&key=${process.env.API_KEY}&maxResults=50${token && "&pageToken=" + token}`, {"Accept": "application/json"})
+        if (!res.ok) console.error("PLAYLIST CONTENTS NOT OKAY\n", res)
         return await res.json()
-    } catch (err) {
-        console.error(err)
+    } catch (e) {
+        console.error(e)
     }
 }
 
-const main = async() => {
-    let items = []
-
-    let resp = await getPlaylist()
-    let token = resp.nextPageToken
-    items = resp.items
-    while (token) {
-        resp = await getPlaylist(token)
-        items = items.concat(resp.items)
-        token = resp.nextPageToken
+const getPlaylistDetails = async (plid) => {
+    try {
+        let res = await fetch(`https://youtube.googleapis.com/youtube/v3/playlists?part=snippet&id=${plid}&key=${process.env.API_KEY}`, {"Accept": "application/json"})
+        if (!res.ok) console.error("PLAYLIST DETAILS NOT OKAY!\n", res)
+        return await res.json()
+    } catch (e) {
+        console.error(e)
     }
+}
 
-    console.log(items, items.length)
+const main = async () => {
+    const ids = ["PLBf-QcbaigsJysJ-KFZvLGJvvW-3sfk1S", "PLBf-QcbaigsKwq3k2YEBQS17xUwfOA3O3", "PLBf-QcbaigsJmwKnDgm990KBo-dI5BVA2"]
+
+    let playlists = []
+
+    try {
+        await new Listr(ids.map((plid,i) => {return {
+            title: `playlist ${plid}`,
+            task: (_,task)=>task.newListr(
+                [{
+                    title: "get playlist details",
+                    task: async () => {
+                        let resp = await getPlaylistDetails(plid)
+                        task.title = resp.items[0].snippet.title.length > 60 ? resp.items[0].snippet.title.slice(0, 60) + "…" : resp.items[0].snippet.title.padEnd(61, " ")
+                    }
+                },
+                {
+                    title: "get all videos in playlist",
+                    task: async () => {
+                        let resp
+                        let vids = []
+                        let token = ""
+                        do {
+                            resp = await getPlaylist(plid, token)
+                            vids = vids.concat(resp.items)
+                            token = resp.nextPageToken
+                            task.title = `${task.title.slice(0,61)} found ${vids.length}`
+                        } while (token)
+                        playlists[i] = vids
+                        task.title = `${task.title.slice(0,61)} found ${vids.length}`
+                    }
+                }],
+                { rendererOptions: { collapse: false }}
+            )
+            }}),
+            { concurrent: true }
+        ).run()
+    } catch (e) {
+        console.error(e)
+    }
+    // console.log(playlists, playlists.length)
+
+
+    // now do the likes
 }
 
 main()

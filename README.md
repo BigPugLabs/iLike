@@ -6,6 +6,7 @@ can like whole youtube playlists in one go
 !note this is incomplete!
 ### TODO
 - [x] pull playlist contents from youtube
+- [x] get playlist details
 - [ ] like items on playlist
 - [ ] track progress
 - [ ] specify multiple/other playlists
