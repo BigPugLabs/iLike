@@ -1,12 +1,8 @@
-const {Listr} = require("listr2")
+const { readFile } = require("node:fs/promises")
+const { Listr } = require("listr2")
 require("dotenv").config()
 
 const getPlaylist = async (plid, token="") => {
-    // playlist ids
-    // PLBf-QcbaigsJysJ-KFZvLGJvvW-3sfk1S
-    // PLBf-QcbaigsKwq3k2YEBQS17xUwfOA3O3
-    // PLBf-QcbaigsJmwKnDgm990KBo-dI5BVA2
-
     try {
         let res = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${plid}&key=${process.env.API_KEY}&maxResults=50${token && "&pageToken=" + token}`, {"Accept": "application/json"})
         if (!res.ok) console.error("PLAYLIST CONTENTS NOT OKAY\n", res)
@@ -27,11 +23,11 @@ const getPlaylistDetails = async (plid) => {
 }
 
 const main = async () => {
-    const ids = ["PLBf-QcbaigsJysJ-KFZvLGJvvW-3sfk1S", "PLBf-QcbaigsKwq3k2YEBQS17xUwfOA3O3", "PLBf-QcbaigsJmwKnDgm990KBo-dI5BVA2"]
-
+    let ids
     let playlists = []
 
     try {
+        ids = JSON.parse(await readFile("playlists.json"))
         await new Listr(ids.map((plid,i) => {return {
             title: `playlist ${plid}`,
             task: (_,task)=>task.newListr(

@@ -9,7 +9,7 @@ can like whole youtube playlists in one go
 - [x] get playlist details
 - [ ] like items on playlist
 - [ ] track progress
-- [ ] specify multiple/other playlists
+- [x] specify multiple/other playlists
 - [ ] pause/resume if api limits exceeded?
 
 ## Requirements
@@ -21,5 +21,6 @@ can like whole youtube playlists in one go
 
 1. Clone this repo locally with `git clone https://github.com/BigPugLabs/iLike.git`
 2. move to the project folder and rename the file `.envSAMPLE` to `.env` and replace the value with your API key
-3. install with `npm i`
-4. `npm run start`
+3. install with `npm install`
+4. add playlist ids to the playlists.json file
+5. `npm run start`
