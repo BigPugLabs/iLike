@@ -1,19 +1,19 @@
 {
-  "name": "yttest",
-  "version": "1.0.0",
+  "name": "iLike",
+  "version": "0.0.3",
   "description": "",
-  "main": "index.js",
+  "main": "iLike.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node iLike.js",
-    "dev": "nodemon"
+    "start": "node iLike.js"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "BigPugLabs",
+  "license": "MIT",
   "dependencies": {
-    "delay": "^5.0.0",
     "dotenv": "^16.0.3",
+    "googleapis": "^109.0.1",
     "listr2": "^5.0.5"
   }
 }
