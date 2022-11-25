@@ -1,6 +1,10 @@
-const { readFile } = require("node:fs/promises")
-const { Listr } = require("listr2")
-require("dotenv").config()
+import { readFile } from "node:fs/promises"
+import { Listr } from "listr2"
+import * as dotenv from "dotenv"
+dotenv.config()
+
+import { authorize } from "./auth.mjs"
+import { getChannel, getPlaylistDetails } from "./ytapi.mjs"
 
 const getPlaylist = async (plid, token = "") => {
     try {
@@ -17,7 +21,7 @@ const getPlaylist = async (plid, token = "") => {
     }
 }
 
-const getPlaylistDetails = async (plid) => {
+const getPlaylistDetailsOLD = async (plid) => {
     try {
         let res = await fetch(
             `https://youtube.googleapis.com/youtube/v3/playlists?part=snippet&id=${plid}&key=${process.env.API_KEY}`,
@@ -33,7 +37,9 @@ const getPlaylistDetails = async (plid) => {
 const main = async () => {
     let ids
     let playlists = []
-
+//console.log(authorize.length)
+//    authorize(getChannel)
+//    return
     try {
         ids = JSON.parse(await readFile("playlists.json"))
         await new Listr(
@@ -44,9 +50,9 @@ const main = async () => {
                         task.newListr(
                             [
                                 {
-                                    title: "get playlist details",
+                                    title: "Get playlist details",
                                     task: async () => {
-                                        let resp = await getPlaylistDetails(plid)
+                                        let resp = await authorize(getPlaylistDetails, [plid])
                                         task.title =
                                             resp.items[0].snippet.title.length > 60
                                                 ? resp.items[0].snippet.title.slice(0, 60) + "…"
@@ -54,8 +60,8 @@ const main = async () => {
                                     },
                                 },
                                 {
-                                    title: "get all videos in playlist",
-                                    task: async () => {
+                                    title: "Get all videos in playlist",
+                                    task: async (_, getVidsTask) => {
                                         let resp
                                         let vids = []
                                         let token = ""
@@ -63,10 +69,10 @@ const main = async () => {
                                             resp = await getPlaylist(plid, token)
                                             vids = vids.concat(resp.items)
                                             token = resp.nextPageToken
-                                            task.title = `${task.title.slice(0, 61)} found ${vids.length}`
+                                            getVidsTask.title = `Videos found : ${vids.length}`
                                         } while (token)
                                         playlists[i] = vids
-                                        task.title = `${task.title.slice(0, 61)} found ${vids.length}`
+                                        getVidsTask.title = `Videos found : ${vids.length}`
                                     },
                                 },
                             ],
