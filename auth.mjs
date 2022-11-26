@@ -6,7 +6,7 @@ const OAuth2 = google.auth.OAuth2
 const SCOPES = ["https://www.googleapis.com/auth/youtube"]
 const TOKEN = "authtoken.json"
 
-async function authorize(callback, cbArgs=[]) {
+async function authorize() {
     let credentials
     try {
         credentials = JSON.parse(await fs.readFile("client_secret.json"))
@@ -23,14 +23,13 @@ async function authorize(callback, cbArgs=[]) {
     try {
         const token = await fs.readFile(TOKEN)
         oauth2Client.credentials = JSON.parse(token)
-        // TODO re-orient everything not to go via this auth callback
-        return await callback(oauth2Client, ...cbArgs)
+        return oauth2Client
     } catch (e) {
-        getNewToken(oauth2Client, callback, cbArgs)
+        return getNewToken(oauth2Client, callback, cbArgs)
     }
 }
 
-function getNewToken(oauth2Client, callback, cbArgs) {
+function getNewToken(oauth2Client) {
     const authUrl = oauth2Client.generateAuthUrl({ access_type: "offline", scope: SCOPES })
     console.log("Authorize this app by visiting this url: ", authUrl)
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
@@ -43,7 +42,7 @@ function getNewToken(oauth2Client, callback, cbArgs) {
             }
             oauth2Client.credentials = token
             storeToken(token)
-            callback(oauth2Client, ...cbArgs)
+            return oauth2Client
         })
     })
 }

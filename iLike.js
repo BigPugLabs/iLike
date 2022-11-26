@@ -4,42 +4,12 @@ import * as dotenv from "dotenv"
 dotenv.config()
 
 import { authorize } from "./auth.mjs"
-import { getChannel, getPlaylistDetails } from "./ytapi.mjs"
-
-const getPlaylist = async (plid, token = "") => {
-    try {
-        let res = await fetch(
-            `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${plid}&key=${
-                process.env.API_KEY
-            }&maxResults=50${token && "&pageToken=" + token}`,
-            { Accept: "application/json" }
-        )
-        if (!res.ok) console.error("PLAYLIST CONTENTS NOT OKAY\n", res)
-        return await res.json()
-    } catch (e) {
-        console.error(e)
-    }
-}
-
-const getPlaylistDetailsOLD = async (plid) => {
-    try {
-        let res = await fetch(
-            `https://youtube.googleapis.com/youtube/v3/playlists?part=snippet&id=${plid}&key=${process.env.API_KEY}`,
-            { Accept: "application/json" }
-        )
-        if (!res.ok) console.error("PLAYLIST DETAILS NOT OKAY!\n", res)
-        return await res.json()
-    } catch (e) {
-        console.error(e)
-    }
-}
+import { getPlaylistDetails, getPlaylistItems, getRating } from "./ytapi.mjs"
 
 const main = async () => {
     let ids
     let playlists = []
-//console.log(authorize.length)
-//    authorize(getChannel)
-//    return
+    const auth = await authorize()
     try {
         ids = JSON.parse(await readFile("playlists.json"))
         await new Listr(
@@ -52,7 +22,7 @@ const main = async () => {
                                 {
                                     title: "Get playlist details",
                                     task: async () => {
-                                        let resp = await authorize(getPlaylistDetails, [plid])
+                                        let resp = await getPlaylistDetails(auth, plid)
                                         task.title =
                                             resp.items[0].snippet.title.length > 60
                                                 ? resp.items[0].snippet.title.slice(0, 60) + "…"
@@ -66,13 +36,40 @@ const main = async () => {
                                         let vids = []
                                         let token = ""
                                         do {
-                                            resp = await getPlaylist(plid, token)
+                                            resp = await getPlaylistItems(auth, plid, token)
                                             vids = vids.concat(resp.items)
                                             token = resp.nextPageToken
                                             getVidsTask.title = `Videos found : ${vids.length}`
                                         } while (token)
                                         playlists[i] = vids
                                         getVidsTask.title = `Videos found : ${vids.length}`
+                                        //console.log(playlists[i])
+                                    },
+                                },
+                                {
+                                    title: "Get ratings",
+                                    task: async (_, getRatingTask) => {
+                                        // TODO
+                                        //
+                                        // seems to be a limit of 50 vids per request
+                                        // need to split longer playlists into multiple reqs
+                                        //
+                                        // getRating() is currently slicing the array to limit
+                                        const resp = await getRating(
+                                            auth,
+                                            playlists[i].map((e) => e.contentDetails.videoId)
+                                        )
+                                        let ratings = resp.reduce((acc, c) => {
+                                            acc[c.rating] = (acc[c.rating] || 0) + 1
+                                            return acc
+                                        }, {})
+                                        playlists[i] = playlists[i].map(
+                                            (e, i) => (e.contentDetails.rating = resp[i].rating)
+                                        )
+
+                                        getRatingTask.title = `Got ratings | Likes - ${ratings.like || 0} | Dislikes - ${ratings.dislike || 0} | none - ${ratings.none || 0}`
+
+                                        console.log(playlists[i].map(e=>e.contentDetails))
                                     },
                                 },
                             ],
